@@ -8,13 +8,11 @@ public class AIMessageResponser
 {
     private readonly GenerativeModel _model;
     private readonly ChatSession _chat;
-    private readonly List<string> _phrases;
-    private readonly string _systemPrompt;
+    private readonly JSONReader _jSONReader;
 
     public AIMessageResponser(JSONReader reader)
     {
-        _systemPrompt = reader.jSON.Prompt;
-        _phrases = [.. reader.jSON.Phrases];
+        _jSONReader = reader;
         _model = new GenerativeModel()
         {
             ApiKey = reader.jSON.AiToken,
@@ -22,13 +20,14 @@ public class AIMessageResponser
         _chat = _model.StartChat();
     }
 
+
     public async Task<string> GenerateResponceAsync(string question)
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.Append($"System prompt: {_systemPrompt}");
+        sb.Append($"System prompt: {_jSONReader.jSON.Prompt}");
         sb.Append("LegendaryPhrases: ");
-        foreach (var p in _phrases)
+        foreach (var p in _jSONReader.jSON.Phrases)
         {
             sb.Append(p + ", " + "\n");
         }

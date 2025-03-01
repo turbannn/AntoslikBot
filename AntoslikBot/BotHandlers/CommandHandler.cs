@@ -14,7 +14,7 @@ namespace AntoslikBot.BotHandlers
             }
             catch (Exception ex)
             {
-                await msg.Channel.SendMessageAsync("хуйня комманда бро");
+                await msg.Channel.SendMessageAsync("bad command");
                 Console.WriteLine($"{ex.Message}\n[AutoMode]Input command error[AutoMode]");
             }
         }

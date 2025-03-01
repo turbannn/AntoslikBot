@@ -17,6 +17,7 @@ internal class AutoModeService
     {
 
     }
+
     public async Task getHelp(SocketMessage msg)
     {
         StringBuilder help = new StringBuilder();
@@ -36,7 +37,7 @@ internal class AutoModeService
     /// </summary>
     /// <param name="msg"></param>
     /// <returns></returns>
-    public async Task RespondToTextMessagesThatMatchThePrompt(SocketMessage msg)
+    public async Task MarkFittingMessages(SocketMessage msg)
     {
         //parsing
         string[] splittedCommand = msg.Content.Split(" ");

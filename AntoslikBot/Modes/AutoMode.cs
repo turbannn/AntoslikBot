@@ -7,12 +7,13 @@ namespace AntoslikBot.Modes;
 
 internal class AutoMode : IBotMode
 {
-    public static Dictionary<String, Func<SocketMessage, Task>> Commands { get; private set; } = null!;
+    internal static Dictionary<String, Func<SocketMessage, Task>> Commands { get; private set; } = null!;
     public string InputCommand { get; set; } = null!;
     public bool isSet { get; private set; } = false;
 
-    private AutoModeService _autoModeService { get; set; }
-    private MessageHandler _messageHandler { get; set; } = null!;
+    private MessageHandler _messageHandler;
+
+    private AutoModeService _autoModeService;
 
     public AutoMode(MessageHandler msgHandler, AutoModeService autoModeService)
     {
@@ -27,7 +28,7 @@ internal class AutoMode : IBotMode
         {
             { "help",  _autoModeService.getHelp }, //automode command module.
             { "mute", _autoModeService.MuteWholeChannelExceptInvoker },
-            { "find", _autoModeService.RespondToTextMessagesThatMatchThePrompt }
+            { "find", _autoModeService.MarkFittingMessages }
         };
         InputCommand = string.Empty;
         isSet = true;

@@ -5,6 +5,8 @@ namespace AntoslikBot.JsonSettings;
 //TODO maybe reafactor later
 public class JSONReader
 {
+    //internal JSONStructure jSON { get; set; }
+
     internal JSONStructure jSON { get; set; }
 
     public JSONReader()

@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using AntoslikBot.AIFeatures;
 using AntoslikBot.JsonSettings;
 using System.Text;
+using AntoslikBot.Interfaces;
 
 namespace AntoslikBot.BotHandlers;
 
@@ -13,9 +14,11 @@ internal class MessageHandler
 {
     #region Fields
     private static Dictionary<int, string> LegendaryPhrases { get; set; } = null!; //cant be readonly, look up why
-    private readonly JSONStructure _config;
+
+
+    private JSONReader _jSONReader;
     private readonly ulong _currentBotId;
-    private readonly AIMessageResponser _aiMessageResponser;
+    private AIMessageResponser _aiMessageResponser;
 
     private static readonly ConcurrentQueue<(string Prefix, SocketMessage Msg)> _commandQueue = new();
     private static readonly Queue<Func<Task>> _aiTasksQueue = new();
@@ -25,9 +28,10 @@ internal class MessageHandler
     #endregion
 
     #region Ctors
+    //TODO refactor DI
     public MessageHandler(JSONReader reader, DiscordSocketClient client, AIMessageResponser aiResponser)
     {
-        _config = reader.jSON;
+        _jSONReader = reader;
         _currentBotId = client.CurrentUser.Id;
         _aiMessageResponser = aiResponser;
 
@@ -128,7 +132,7 @@ internal class MessageHandler
             return;
         }
 
-        if (msg.Content.StartsWith(_config.Prefix) && COMMAND_QUERY_SEMAFOR > 0)
+        if (msg.Content.StartsWith(_jSONReader.jSON.Prefix) && COMMAND_QUERY_SEMAFOR > 0)
         {
             await msg.Channel.SendMessageAsync(embed:
                 new EmbedBuilder()
@@ -138,13 +142,13 @@ internal class MessageHandler
             return;
         }
 
-        if (msg.Content.StartsWith(_config.Prefix))
+        if (msg.Content.StartsWith(_jSONReader.jSON.Prefix))
         {
-            EnqueueCommand(_config.Prefix, msg);
+            EnqueueCommand(_jSONReader.jSON.Prefix, msg);
             return;
         }
 
-        if (!_config.TriggerIDs.Contains(msg.Author.Id))
+        if (!_jSONReader.jSON.TriggerIDs.Contains(msg.Author.Id))
         {
             return;
         }

@@ -17,13 +17,14 @@ internal class ManualMode : IBotMode
     public string InputCommand { get; set; } = null!;
     public bool isSet { get; private set; } = false;
 
-    private ManualModeService _manualModService { get; set; }
-    private MessageHandler _messageHandler { get; set; } = null!;
+    private ManualModeService _manualModeService { get; set; }
+    private MessageHandler _messageHandler { get; set; }
 
-    public ManualMode(MessageHandler msgHandler, ManualModeService manualModService)
+
+    public ManualMode(MessageHandler msgHandler, ManualModeService manualModeService)
     {
         _messageHandler = msgHandler;
-        _manualModService = manualModService;
+        _manualModeService = manualModeService;
         Set();
     }
 
@@ -31,10 +32,10 @@ internal class ManualMode : IBotMode
     {
         Commands = new Dictionary<string, Func<Task>>
             {
-                { "text",  _manualModService.Text},
-                { "statvoices",  _manualModService.SeeUsersInVoiceChannels},
-                { "allroles",  _manualModService.SeeAllRoles},
-                { "changeroles",  _manualModService.ChangeRoles}
+                { "text",  _manualModeService.Text},
+                { "statvoices",  _manualModeService.SeeUsersInVoiceChannels},
+                { "allroles",  _manualModeService.SeeAllRoles},
+                { "changeroles",  _manualModeService.ChangeRoles}
             };
         InputCommand = string.Empty;
         isSet = true;
