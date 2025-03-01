@@ -2,16 +2,17 @@
 
 namespace AntoslikBot.JsonSettings;
 
+//TODO maybe reafactor later
 public class JSONReader
 {
-    public JSONStructure jSON { get; set; }
+    internal JSONStructure jSON { get; set; }
 
     public JSONReader()
     {
         jSON = ReadJsonStructure() ?? throw new NullReferenceException();
     }
 
-    public JSONStructure? ReadJsonStructure()
+    private JSONStructure? ReadJsonStructure()
     {
         Console.WriteLine("Enter json config path: ");
         string? filePath = Console.ReadLine();

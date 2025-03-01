@@ -17,7 +17,7 @@ public class AIMessageResponser
         _phrases = [.. reader.jSON.Phrases];
         _model = new GenerativeModel()
         {
-            ApiKey = "AIzaSyDDsYodikm3YZ_hwZ0ffklWjYq_o9BBy1E",
+            ApiKey = reader.jSON.AiToken,
         };
         _chat = _model.StartChat();
     }
