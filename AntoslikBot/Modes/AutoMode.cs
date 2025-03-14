@@ -7,14 +7,15 @@ namespace AntoslikBot.Modes;
 
 internal class AutoMode : IBotMode
 {
-    public static Dictionary<String, Func<SocketMessage, Task>> Commands { get; private set; } = null!;
+    internal static Dictionary<String, Func<SocketMessage, Task>> Commands { get; private set; } = null!;
     public string InputCommand { get; set; } = null!;
     public bool isSet { get; private set; } = false;
 
-    private AutoModeService _autoModeService { get; set; }
-    private MessageHandler _messageHandler { get; set; } = null!;
+    private MessageHandler _messageHandler;
 
-    public AutoMode(MessageHandler msgHandler, AutoModeService autoModeService)
+    private IAutoModeService _autoModeService;
+
+    public AutoMode(MessageHandler msgHandler, IAutoModeService autoModeService)
     {
         _messageHandler = msgHandler;
         _autoModeService = autoModeService;
@@ -26,15 +27,15 @@ internal class AutoMode : IBotMode
         Commands = new Dictionary<string, Func<SocketMessage, Task>>
         {
             { "help",  _autoModeService.getHelp }, //automode command module.
-            { "mute", _autoModeService.MuteWholeChannelExceptInvoker },
-            { "find", _autoModeService.RespondToTextMessagesThatMatchThePrompt }
+            { "mute", _autoModeService.TotalMute },
+            { "find", _autoModeService.MarkFittingMessages }
         };
         InputCommand = string.Empty;
         isSet = true;
     }
     public void ChangeSubscriptions(DiscordSocketClient client)
     {
-        client.MessageReceived += _messageHandler.MessagesHandler;
+        client.MessageReceived += _messageHandler.Handle;
         client.UserVoiceStateUpdated += VoiceStateHandler.VoiceStateUpdateHandler;
     }
     public Task Run()

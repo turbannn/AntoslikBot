@@ -19,7 +19,7 @@ namespace AntoslikBot.Program
         private readonly DiscordSocketClient _client;
         private readonly JSONReader _jsonReader;
 
-        private IBotMode _botMod = null!;
+        private IBotMode _botMode = null!;
 
         private static bool _isBotOn = true;
         private static string? _lineToWorkWith = "";
@@ -33,6 +33,7 @@ namespace AntoslikBot.Program
 
             _client.Log += Log;
         }
+
 
         public async Task RunBotAsync(string[] args)
         {
@@ -49,14 +50,14 @@ namespace AntoslikBot.Program
                 switch (_lineToWorkWith)
                 {
                     case "setAuto":
-                        _botMod = _services.GetRequiredService<AutoMode>();
-                        _botMod.ChangeSubscriptions(_client);
-                        await _botMod.Run();
+                        _botMode = _services.GetRequiredService<AutoMode>();
+                        _botMode.ChangeSubscriptions(_client);
+                        await _botMode.Run();
                         break;
                     case "setManual":
-                        _botMod = _services.GetRequiredService<ManualMode>();
-                        _botMod.ChangeSubscriptions(_client);
-                        await _botMod.Run();
+                        _botMode = _services.GetRequiredService<ManualMode>();
+                        _botMode.ChangeSubscriptions(_client);
+                        await _botMode.Run();
                         break;
                     case "off":
                         _isBotOn = false;
@@ -71,8 +72,8 @@ namespace AntoslikBot.Program
                 .AddTransient<ManualMode>()
                 .AddTransient<AutoMode>()
                 .AddSingleton<MessageHandler>()
-                .AddSingleton<ManualModeService>()
-                .AddSingleton<AutoModeService>()
+                .AddSingleton<IManualModeService, ManualModeService>()
+                .AddSingleton<IAutoModeService, AutoModeService>()
                 .AddSingleton<AIMessageResponser>()
                 .AddSingleton(provider =>
                 {

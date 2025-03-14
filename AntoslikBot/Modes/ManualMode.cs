@@ -16,32 +16,32 @@ internal class ManualMode : IBotMode
     public static Dictionary<String, Func<Task>> Commands { get; private set; } = null!;
     public string InputCommand { get; set; } = null!;
     public bool isSet { get; private set; } = false;
+    private MessageHandler _messageHandler { get; set; }
 
-    private ManualModeService _manualModService { get; set; }
-    private MessageHandler _messageHandler { get; set; } = null!;
+    private IManualModeService _manualModeService;
 
-    public ManualMode(MessageHandler msgHandler, ManualModeService manualModService)
+    public ManualMode(MessageHandler msgHandler, IManualModeService manualModeService)
     {
         _messageHandler = msgHandler;
-        _manualModService = manualModService;
+        _manualModeService = manualModeService;
         Set();
     }
 
     public void Set()
     {
         Commands = new Dictionary<string, Func<Task>>
-            {
-                { "text",  _manualModService.Text},
-                { "statvoices",  _manualModService.SeeUsersInVoiceChannels},
-                { "allroles",  _manualModService.SeeAllRoles},
-                { "changeroles",  _manualModService.ChangeRoles}
-            };
+        {
+            { "text",  _manualModeService.Text},
+            { "statvoices",  _manualModeService.SeeUsersInVoiceChannels},
+            { "allroles",  _manualModeService.SeeAllRoles},
+            { "changeroles",  _manualModeService.ChangeRoles}
+        };
         InputCommand = string.Empty;
         isSet = true;
     }
     public void ChangeSubscriptions(DiscordSocketClient client)
     {
-        client.MessageReceived -= _messageHandler.MessagesHandler;
+        client.MessageReceived -= _messageHandler.Handle;
         client.UserVoiceStateUpdated -= VoiceStateHandler.VoiceStateUpdateHandler;
     }
     public async Task Run()

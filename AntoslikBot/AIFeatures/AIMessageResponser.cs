@@ -1,6 +1,7 @@
 ﻿using AntoslikBot.JsonSettings;
 using Mscc.GenerativeAI;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AntoslikBot.AIFeatures;
 
@@ -8,13 +9,11 @@ public class AIMessageResponser
 {
     private readonly GenerativeModel _model;
     private readonly ChatSession _chat;
-    private readonly List<string> _phrases;
-    private readonly string _systemPrompt;
+    private readonly JSONReader _jSONReader;
 
     public AIMessageResponser(JSONReader reader)
     {
-        _systemPrompt = reader.jSON.Prompt;
-        _phrases = [.. reader.jSON.Phrases];
+        _jSONReader = reader;
         _model = new GenerativeModel()
         {
             ApiKey = reader.jSON.AiToken,
@@ -26,16 +25,15 @@ public class AIMessageResponser
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.Append($"System prompt: {_systemPrompt}");
+        sb.Append($"System prompt: {_jSONReader.jSON.Prompt}");
         sb.Append("LegendaryPhrases: ");
-        foreach (var p in _phrases)
+        foreach (var p in _jSONReader.jSON.Phrases)
         {
             sb.Append(p + ", " + "\n");
         }
-        sb.Append($" \n\n Question: {question}");
+        sb.Append($" \n\n Question: {CleanMessageContent(question)}");
 
         string combinedPrompt = sb.ToString();
-
 
         try
         {
@@ -56,5 +54,15 @@ public class AIMessageResponser
             return $"Error: {ex.Message}";
         }
     }
+    private string CleanMessageContent(string messageContent)
+    {
+        StringBuilder cleanedMessage = new StringBuilder(messageContent);
 
+        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"<@!?(\d+)>|<@&(\d+)>|<@!&(\d+)>|@everyone|@here").Value, ""); //del mentions
+        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"<#\d+>").Value, ""); //del channel references
+        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"^\!?\w+").Value, ""); //del commands
+        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"\s+").Value, " "); //del spaces
+
+        return cleanedMessage.ToString().Trim();
+    }
 }

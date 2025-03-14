@@ -1,43 +1,42 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using AntoslikBot.Interfaces;
 
 namespace AntoslikBot.Services
 {
-    internal class ManualModeService
+    //need to check for concurency issues and overall usage
+    internal class ManualModeService : IManualModeService
     {
         private readonly DiscordSocketClient _client;
+
+        public string? Readline { get; private set; }
+
         public ManualModeService(DiscordSocketClient client)
         {
             _client = client;
         }
+
         public async Task Text()
         {
             IGuild guild;
-            string? message = string.Empty;
+            Readline = string.Empty;
 
             guild = SelectGuild();
             ITextChannel? guildTextChannel = await SelectTextChannel(guild);
-            while (message != "quit")
+            while (Readline != "quit")
             {
                 if (guildTextChannel != null)
                 {
                     Console.WriteLine("message readline: | '@' | 'quit'");
-                    message = Console.ReadLine();
-                    if (message != null && message != "quit" && !message.Contains("@"))
-                        await guildTextChannel.SendMessageAsync(message);
-                    if (message != null && message != "quit" && message.Contains("@"))
+                    Readline = Console.ReadLine();
+                    if (Readline != null && Readline != "quit" && !Readline.Contains("@"))
+                        await guildTextChannel.SendMessageAsync(Readline);
+                    if (Readline != null && Readline != "quit" && Readline.Contains("@"))
                         await Mention(guild.GetUsersAsync().Result, guildTextChannel);
                 }
             }
         }
-        public IGuild SelectGuild()
+        private IGuild SelectGuild()
         {
             IGuild? guild = null;
             string[] guildNames = new string[_client.Guilds.Count];
@@ -66,7 +65,7 @@ namespace AntoslikBot.Services
             return guild;
         }
 
-        public async Task<ITextChannel?> SelectTextChannel(IGuild guild)
+        private async Task<ITextChannel?> SelectTextChannel(IGuild guild)
         {
             IReadOnlyCollection<IGuildChannel> GuildChannels = await guild.GetChannelsAsync();
             ITextChannel? returnTextChannel = null;
@@ -91,17 +90,17 @@ namespace AntoslikBot.Services
             Console.WriteLine("Channel found");
             return returnTextChannel;
         }
-        public async Task Mention(IReadOnlyCollection<IGuildUser> GuildUsers, ITextChannel guildTextChannel)
+        private async Task Mention(IReadOnlyCollection<IGuildUser> GuildUsers, ITextChannel guildTextChannel)
         {
-            string? Message = string.Empty;
+            Readline = string.Empty;
 
             await SeeUsers(GuildUsers);
             await Task.Run(async () =>
             {
                 IGuildUser? user = SelectUser(GuildUsers);
                 Console.WriteLine("readline message: ");
-                Message = Console.ReadLine();
-                await guildTextChannel.SendMessageAsync($"{user.Mention} {Message}");
+                Readline = Console.ReadLine();
+                await guildTextChannel.SendMessageAsync($"{user.Mention} {Readline}");
             });
         }
         public Task SeeUsersInVoiceChannels()
@@ -128,15 +127,16 @@ namespace AntoslikBot.Services
             }
             return Task.CompletedTask;
         }
-        public Task SeeUsers(IReadOnlyCollection<IGuildUser> GuildUsers)
+        private Task SeeUsers(IReadOnlyCollection<IGuildUser> GuildUsers)
         {
-            string? command = string.Empty;
-            while (command != "online" && command != "offline" && command != "all")
+            Readline = string.Empty;
+
+            while (Readline != "online" && Readline != "offline" && Readline != "all")
             {
                 Console.WriteLine("online(ne rabotaet) | offline(ne rabotaet) | all");
                 Task.Delay(1000);
-                command = Console.ReadLine();
-                switch (command)
+                Readline = Console.ReadLine();
+                switch (Readline)
                 {
                     case "online":
                         Console.WriteLine("Online users: ");
@@ -169,21 +169,17 @@ namespace AntoslikBot.Services
             }
             return Task.CompletedTask;
         }
-        public IGuildUser SelectUser(IReadOnlyCollection<IGuildUser> GuildUsers)
+        private IGuildUser SelectUser(IReadOnlyCollection<IGuildUser> GuildUsers)
         {
-            string? mention = string.Empty;
+            Readline = string.Empty;
             IGuildUser? user = null;
-            Console.WriteLine("readline username: ");
-            mention = Console.ReadLine();
-            if (mention != null)
-                user = GuildUsers.FirstOrDefault(u => u.Username.Contains(mention));
 
             while (user == null)
             {
-                Console.WriteLine("USER NOT FOUND: ");
-                mention = Console.ReadLine();
-                if (mention != null)
-                    user = GuildUsers.FirstOrDefault(u => u.Username.Contains(mention));
+                Console.WriteLine("readline username: ");
+                Readline = Console.ReadLine();
+                if (Readline != null)
+                    user = GuildUsers.FirstOrDefault(u => u.Username.Contains(Readline));
             }
             Console.WriteLine("User found");
             return user;
@@ -209,7 +205,7 @@ namespace AntoslikBot.Services
 
             return Task.CompletedTask;
         }
-        public Task SeeUserRoles(IGuildUser user)
+        private Task SeeUserRoles(IGuildUser user)
         {
             Console.WriteLine("All user roles:");
             if (user is SocketGuildUser socketUser)
@@ -223,21 +219,23 @@ namespace AntoslikBot.Services
         }
         public async Task ChangeRoles()
         {
-            string? command = string.Empty;
+            Readline = string.Empty;
             string? roleName = string.Empty;
-            IGuild guild = SelectGuild();
-            IReadOnlyCollection<IGuildUser> guildUsers = await guild.GetUsersAsync();
+            
             IGuildUser? user = null;
             IRole? role;
+
+            IGuild guild = SelectGuild();
+            IReadOnlyCollection<IGuildUser> guildUsers = await guild.GetUsersAsync();
 
             Console.WriteLine("Users: ");
             await SeeUsers(guildUsers);
 
-            while (command != "add" && command != "remove")
+            while (Readline != "add" && Readline != "remove")
             {
                 Console.WriteLine("add | remove");
-                command = Console.ReadLine();
-                switch (command)
+                Readline = Console.ReadLine();
+                switch (Readline)
                 {
                     case "add":
                         role = null;

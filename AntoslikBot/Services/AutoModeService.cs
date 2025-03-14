@@ -8,15 +8,17 @@ using System.Threading.Tasks;
 using AntoslikBot.Modes;
 using Discord;
 using System.Data;
+using AntoslikBot.Interfaces;
 
 namespace AntoslikBot.Services;
 
-internal class AutoModeService
+internal class AutoModeService : IAutoModeService
 {
     public AutoModeService()
     {
 
     }
+
     public async Task getHelp(SocketMessage msg)
     {
         StringBuilder help = new StringBuilder();
@@ -36,7 +38,7 @@ internal class AutoModeService
     /// </summary>
     /// <param name="msg"></param>
     /// <returns></returns>
-    public async Task RespondToTextMessagesThatMatchThePrompt(SocketMessage msg)
+    public async Task MarkFittingMessages(SocketMessage msg)
     {
         //parsing
         string[] splittedCommand = msg.Content.Split(" ");
@@ -68,7 +70,7 @@ internal class AutoModeService
 
         //msgs content
         IEnumerable<IMessage> allMessages = await msg.Channel.GetMessagesAsync(limit: msglimit).FlattenAsync();
-        IEnumerable<IMessage>? messagesToSend = null;
+        IEnumerable<IMessage>? messagesToPoint = null;
 
         SocketUser? user = null;
 
@@ -78,27 +80,25 @@ internal class AutoModeService
         }
 
         if (user != null)
-            messagesToSend = allMessages.Where(m => m.Content.Contains(prompt) && m.Author.Id == user.Id);
+            messagesToPoint = allMessages.Where(m => m.Content.Contains(prompt) && m.Author.Id == user.Id);
         else
-            messagesToSend = allMessages.Where(m => m.Content.Contains(prompt));
+            messagesToPoint = allMessages.Where(m => m.Content.Contains(prompt));
 
 
-        await PointTheMessages(messagesToSend, msg.Channel, prompt);
+        await PointTheMessages(messagesToPoint, msg.Channel, prompt);
     }
-    private async Task PointTheMessages(IEnumerable<IMessage> messagesToSend, ISocketMessageChannel channel, string prompt)
+    private async Task PointTheMessages(IEnumerable<IMessage> messagesToPoint, ISocketMessageChannel channel, string prompt)
     {
-        foreach (var message in messagesToSend)
+        foreach (var m in messagesToPoint)
         {
-            foreach (var m in messagesToSend)
-            {
-                await channel.SendMessageAsync(embed:
-                    new EmbedBuilder()
-                    .WithTitle(ChangeOffsetToCest(m.CreatedAt).ToString())
-                    .WithDescription("Prompt: " + prompt)
-                    .Build(),
-                    messageReference: new MessageReference(m.Id));
-            }
+            await channel.SendMessageAsync(embed:
+                new EmbedBuilder()
+                .WithTitle(ChangeOffsetToCest(m.CreatedAt).ToString())
+                .WithDescription("Prompt: " + prompt)
+                .Build(),
+                messageReference: new MessageReference(m.Id));
         }
+        
 
     }
     private static DateTimeOffset ChangeOffsetToCest(DateTimeOffset original)
@@ -117,7 +117,7 @@ internal class AutoModeService
     /// <returns>
     /// 
     /// </returns>
-    public async Task MuteWholeChannelExceptInvoker(SocketMessage msg)
+    public async Task TotalMute(SocketMessage msg)
     {
         int.TryParse(msg.Content.Split(" ")[1], out int seconds);
 

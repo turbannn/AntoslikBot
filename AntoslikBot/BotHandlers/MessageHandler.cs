@@ -5,16 +5,20 @@ using System.Collections.Concurrent;
 using AntoslikBot.AIFeatures;
 using AntoslikBot.JsonSettings;
 using System.Text;
+using AntoslikBot.Interfaces;
 
 namespace AntoslikBot.BotHandlers;
 
-//TODO: make IHandler interface for all handlers, refactor DI
+//TODO: refactor additional methods
 internal class MessageHandler
 {
     #region Fields
+    //used to need System.Collections.Generic.Dictionary in previous bot version, but now there is no special need, nevertheless let it be
     private static Dictionary<int, string> LegendaryPhrases { get; set; } = null!; //cant be readonly, look up why
-    private readonly JSONStructure _config;
-    private readonly ulong _currentBotId;
+
+
+    private readonly JSONReader _jSONReader;
+    private readonly DiscordSocketClient _client;
     private readonly AIMessageResponser _aiMessageResponser;
 
     private static readonly ConcurrentQueue<(string Prefix, SocketMessage Msg)> _commandQueue = new();
@@ -27,8 +31,8 @@ internal class MessageHandler
     #region Ctors
     public MessageHandler(JSONReader reader, DiscordSocketClient client, AIMessageResponser aiResponser)
     {
-        _config = reader.jSON;
-        _currentBotId = client.CurrentUser.Id;
+        _jSONReader = reader;
+        _client = client;
         _aiMessageResponser = aiResponser;
 
         LegendaryPhrases = new Dictionary<int, string>();
@@ -45,22 +49,10 @@ internal class MessageHandler
     public void EnqueueCommand(string prefix, SocketMessage msg)
     {
         _commandQueue.Enqueue((prefix, msg));
-        Task.Run(ProcessCommandQueueAsync);
+        Task.Run(ProcessCommandAsync);
         COMMAND_QUERY_SEMAFOR++;
     }
-    private void EnqueueAiTask(SocketMessage msg)
-    {
-        _aiTasksQueue.Enqueue(async () =>
-        {
-            string response = await _aiMessageResponser.GenerateResponceAsync(CleanMessageContent(msg.Content));
-            await msg.Channel.SendMessageAsync(response, messageReference: new MessageReference(msg.Id));
-        });
-
-        // Ensure queue processing starts
-        Task.Run(ProcessAiTasksQueueAsync);
-    }
-
-    private async Task ProcessCommandQueueAsync()
+    private async Task ProcessCommandAsync()
     {
         while (_commandQueue.TryDequeue(out var command))
         {
@@ -71,7 +63,20 @@ internal class MessageHandler
             }
         }
     }
-    public async Task ProcessAiTasksQueueAsync()
+    private void EnqueueAiTask(SocketMessage msg)
+    {
+        _aiTasksQueue.Enqueue(async () =>
+        {
+            string response = await _aiMessageResponser.GenerateResponceAsync(msg.Content);
+            await msg.Channel.SendMessageAsync(response, messageReference: new MessageReference(msg.Id));
+        });
+
+        // Ensure queue processing starts
+        Task.Run(ProcessAiTaskAsync);
+    }
+
+    //Issue: REALLY F bad implementation, cuncurency troubles, total refactor needed
+    public async Task ProcessAiTaskAsync()
     {
         while (_aiTasksQueue.Count > 0)
         {
@@ -95,40 +100,23 @@ internal class MessageHandler
             }
             else
             {
-                await Task.Delay(50); // No task to process, wait before checking again
+                await Task.Delay(100); // No task to process, wait before checking again
             }
         }
     }
-    public string CleanMessageContent(string messageContent)
-    {
-        StringBuilder cleanedMessage = new StringBuilder(messageContent);
 
-        // del mentions
-        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"<@!?(\d+)>|<@&(\d+)>|<@!&(\d+)>|@everyone|@here").Value, "");
-
-        // del channel references
-        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"<#\d+>").Value, "");
-
-        // del commands
-        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"^\!?\w+").Value, "");
-
-        // del spaces
-        cleanedMessage.Replace(Regex.Match(cleanedMessage.ToString(), @"\s+").Value, " ");
-
-        return cleanedMessage.ToString().Trim();
-    }
-    public async Task MessagesHandler(SocketMessage msg)
+    public async Task Handle(SocketMessage msg)
     {
         if (msg.Author.IsBot)
             return;
 
-        if (msg.MentionedUsers.Any(user => user.Id == _currentBotId))
+        if (msg.MentionedUsers.Any(user => user.Id == _client.CurrentUser.Id))
         {
             EnqueueAiTask(msg);
             return;
         }
 
-        if (msg.Content.StartsWith(_config.Prefix) && COMMAND_QUERY_SEMAFOR > 0)
+        if (msg.Content.StartsWith(_jSONReader.jSON.Prefix) && COMMAND_QUERY_SEMAFOR > 0)
         {
             await msg.Channel.SendMessageAsync(embed:
                 new EmbedBuilder()
@@ -138,13 +126,13 @@ internal class MessageHandler
             return;
         }
 
-        if (msg.Content.StartsWith(_config.Prefix))
+        if (msg.Content.StartsWith(_jSONReader.jSON.Prefix))
         {
-            EnqueueCommand(_config.Prefix, msg);
+            EnqueueCommand(_jSONReader.jSON.Prefix, msg);
             return;
         }
 
-        if (!_config.TriggerIDs.Contains(msg.Author.Id))
+        if (!_jSONReader.jSON.TriggerIDs.Contains(msg.Author.Id))
         {
             return;
         }
